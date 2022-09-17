@@ -5,7 +5,7 @@ class SqlDb {
   static Database? _db;
 
   Future<Database?> get db async {
-    return _db ??= initialDb();
+    return _db ??= await initialDb();
   }
 
   initialDb() async {
@@ -13,22 +13,22 @@ class SqlDb {
         await getDatabasesPath(); // الفانكشن دي بتحدد مسار افتراضي للداتابيس
     String path = join(databasePath, 'notes.db');
     Database myDb = await openDatabase(path,
-        onCreate: _onCreate, version: 1, onUpgrade: _onUpgrade);
+        onCreate: _onCreate, version: 2, onUpgrade: _onUpgrade);
     return myDb;
   }
 
   _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE notes (
-      id INTEGER AUTOINCREMENT NOT NULL PRIMARY KEY ,
-      notes TEXT NOT NULL
+      id INTEGER  NOT NULL PRIMARY KEY AUTOINCREMENT,
+      note TEXT NOT NULL
       )
       ''');
-    print("Database is Created");
+    print("onCreate ========================================");
   }
 
   _onUpgrade(Database db, int oldVersion, int newVersion) {
-
+    print("onUpgrade ========================================");
   }
 
   readData(String sql) async {
