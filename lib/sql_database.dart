@@ -18,17 +18,30 @@ class SqlDb {
   }
 
   _onCreate(Database db, int version) async {
-    await db.execute('''
+    Batch batch = db.batch();
+    batch.execute('''
       CREATE TABLE notes (
       id INTEGER  NOT NULL PRIMARY KEY AUTOINCREMENT,
-      note TEXT NOT NULL
+      title TEXT NOT NULL,
+      note TEXT NOT NULL,
+      color TEXT NOT NULL
       )
       ''');
+
+    await batch.commit();
+
     print("onCreate ========================================");
   }
 
   _onUpgrade(Database db, int oldVersion, int newVersion) {
     print("onUpgrade ========================================");
+  }
+
+  deleteDb()async{
+    String databasePath =
+        await getDatabasesPath(); // الفانكشن دي بتحدد مسار افتراضي للداتابيس
+    String path = join(databasePath, 'notes.db');
+    deleteDatabase(path);
   }
 
   readData(String sql) async {
