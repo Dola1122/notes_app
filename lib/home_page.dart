@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/edit_notes.dart';
 import 'package:notes_app/sql_database.dart';
 
 class Home extends StatefulWidget {
@@ -8,10 +9,23 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   SqlDb sqlDb = SqlDb();
+  List<Map> notes = [];
 
-  Future<List<Map>> getNotes() async {
-    List<Map> notes = await sqlDb.readData('SELECT * FROM notes');
-    return notes;
+  bool dataIsReady = false;
+
+  void getData() async {
+    List<Map> response = await sqlDb.readData('SELECT * FROM notes');
+    notes.addAll(response);
+    dataIsReady = true;
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void initState() {
+    getData();
+    super.initState();
   }
 
   @override
@@ -26,46 +40,62 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         title: Text("Home Page"),
       ),
-      body: Container(
-          child: ListView(
-        children: [
-          // MaterialButton(
-          //   onPressed: () async {
-          //     //await sqlDb.deleteDb();
-          //     List<Map> notes = await sqlDb.readData('SELECT * FROM notes');
-          //     print(notes);
-          //   },
-          //   child: Text(
-          //     "Delete Database",
-          //     style: TextStyle(color: Colors.white),
-          //   ),
-          //   color: Colors.red,
-          // ),
-          FutureBuilder(
-              future: getNotes(),
-              builder: (context, AsyncSnapshot<List<Map>> snapshot) {
-                if (snapshot.hasData) {
-                  return ListView.builder(
-                    physics: NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    itemBuilder: (context, index) {
-                      return Card(
-                        child: ListTile(
-                          title:
-                              Text("${snapshot.data![index]["title"]}"),
-                          subtitle:    Text("${snapshot.data![index]["note"]}"),
-                          trailing:    Text("${snapshot.data![index]["color"]}"),
-                        ),
-                      );
-                    },
-                    itemCount: snapshot.data!.length,
-                  );
-                } else {
-                  return Center(child: CircularProgressIndicator());
-                }
-              }),
-        ],
-      )),
+      body: dataIsReady == false
+          ? Center(
+              child: CircularProgressIndicator(),
+            )
+          : Container(
+              child: ListView(
+              children: [
+                ListView.builder(
+                  physics: NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      child: ListTile(
+                          title: Text("${notes[index]["title"]}"),
+                          subtitle: Text("${notes[index]["note"]}"),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  Icons.edit,
+                                  color: Colors.blue,
+                                ),
+                                onPressed: () {
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (context) => EditNotes(
+                                          note: notes[index]["note"],
+                                          title: notes[index]["title"],
+                                          color: notes[index]["color"],
+                                          id: notes[index]["id"])));
+                                },
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () async {
+                                  int response = await sqlDb.deleteData(
+                                      'DELETE FROM notes WHERE id = ${notes[index]["id"]}');
+                                  if (response > 0) {
+                                    setState(() {
+                                      notes.removeWhere((element) =>
+                                          element["id"] == notes[index]["id"]);
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
+                          )),
+                    );
+                  },
+                  itemCount: notes.length,
+                )
+              ],
+            )),
     );
   }
 }
